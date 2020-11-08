@@ -2,31 +2,32 @@ package com.company;
 
 import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStream;
+
 import java.io.InputStreamReader;
-import java.lang.reflect.Array;
+
 import java.net.*;
 import java.util.ArrayList;
-import java.util.Arrays;
+
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Stream;
+
 
 public class Parser {
 
     String link;
     String tag;
 
-    public Parser(String link, String tag) {
+    public Parser(String link) {
         this.link = link;
-        this.tag = tag;
+
     }
 
 
 
-    public String getStringRaw()  {
+    public String getStringRaw() throws IOException {
 
         HttpURLConnection connection = null;
+        String line;
         try {
             connection = (HttpURLConnection) new URL(link).openConnection();
         } catch (IOException e) {
@@ -43,7 +44,13 @@ public class Parser {
             System.out.println("Не удалось открыть поток " + e.getLocalizedMessage());
 
         }
-        reader.lines().forEach(respBody::append);
+        //reader.lines().forEach(respBody::append);
+
+        while ((line = reader.readLine()) != null) {
+            respBody.append(line);
+        }
+
+
         try {
             reader.close();
         } catch (IOException e) {
@@ -76,11 +83,5 @@ public class Parser {
         this.link = link;
     }
 
-    public String getTag() {
-        return tag;
-    }
 
-    public void setTag(String tag) {
-        this.tag = tag;
-    }
 }
