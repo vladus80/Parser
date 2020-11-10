@@ -1,67 +1,48 @@
 package com.company;
 
 import java.io.*;
-
-import java.net.*;
 import java.util.ArrayList;
-
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 
+/*
+Класс Parser решает задачу получения необходимых данных из источника (файл или ссылка интернета)
+Источником является экземпляры классов (объект) реализующих интерфейс IWorkSource. Таковыми классами являются SourceNet
+и SourceFile, в конструкторы которых передаются ссылки на источник данных.
+
+ */
+
 public class Parser {
 
-    String link;
+    IWorkSource iWorkSource; // ссылка на объект реализующих интерфейс IWorkSource
+    String fileSave;         // путь к файлу для сохранения выходных данный
+    String pattern;          // строка шаблона поиска в стиле regex.
+    String rawString;        // строка для хранения сырых данных от объекта IWorkSource
 
-    public Parser(String link) {
-        this.link = link;
-
+    /*
+     Конструктор принимает три параметра
+     IWorkSource - экземпляр класса реализующих интерфейс IWorkSource
+     fileSave    - Путь файла для сохранения выходных данный. Если файл не существует то он создается
+     pattern     - Шаблон по которому будут фильтроваться данные
+     */
+    public Parser(IWorkSource iWorkSource, String fileSave, String pattern) {
+        this.iWorkSource = iWorkSource;
+        this.fileSave = fileSave;
+        this.pattern = pattern;
     }
 
 
-    public String getStringRaw() throws IOException {
-
-        HttpURLConnection connection = null;
-        String line;
-        try {
-            connection = (HttpURLConnection) new URL(link).openConnection();
-        } catch (IOException e) {
-            // e.printStackTrace();
-            System.out.println("Не удалось открыть соединение " + e.getLocalizedMessage());
-        }
-
-        StringBuilder respBody = new StringBuilder();
-        BufferedReader reader = null;
-        try {
-            reader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
-        } catch (IOException e) {
-            //e.printStackTrace();
-            System.out.println("Не удалось открыть поток " + e.getLocalizedMessage());
-
-        }
-        //reader.lines().forEach(respBody::append);
-
-        while ((line = reader.readLine()) != null) {
-            respBody.append(line);
-        }
-
+    // Метод возвращает список найденных вхождений в строке согласно паттерну.
+    private ArrayList<String> getData() {
 
         try {
-            reader.close();
+            rawString = iWorkSource.getStringRaw();
         } catch (IOException e) {
-            //e.printStackTrace();
-            System.out.println("Не удалось закрыть поток " + e.getLocalizedMessage());
+            e.printStackTrace();
         }
-
-        return respBody.toString();
-
-    }
-
-
-    public ArrayList<String> getData(String rawString) {
-
         ArrayList<String> arrayList = new ArrayList<>();
-        Pattern p = Pattern.compile("(https?|ftp|file)://[-a-zA-Z0-9+&@#/%?=~_|!:,.;]*[-a-zA-Z0-9+&@#/%=~_|]");
+        Pattern p = Pattern.compile(this.pattern);
         Matcher m = p.matcher(rawString);
 
         while (m.find()) {
@@ -72,23 +53,27 @@ public class Parser {
 
     }
 
-
-    public void saveDataInFile(ArrayList<String> data, String fileName) throws IOException {
-
-        File file = new File(fileName);
-
-        if(!file.exists()){
+   // Метод сохраняет в файл список найденных вхождений
+    public void saveDataInFile() throws IOException {
+        ArrayList<String> data = getData();
+        File file = new File(fileSave);
+        if (!file.exists() && !file.isDirectory()) {
             file.createNewFile();
             BufferedWriter writer = new BufferedWriter(new FileWriter(file));
             for (String value : data) {
                 writer.write(value + "\n");
             }
+            // Если файл пустой и не является директорией
+        } else {
+
+            if (file.length() == 0 ) {
+                BufferedWriter writer = new BufferedWriter(new FileWriter(file));
+                for (String value : data) {
+                    writer.write(value + "\n");
+                }
+            }
+
         }
     }
-
-    public void setLink(String link) {
-        this.link = link;
-    }
-
 
 }
